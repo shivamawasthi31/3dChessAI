@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(git clone:*)",
+      "Bash(python3 -m venv:*)",
+      "Bash(npm install:*)",
+      "Bash(npx webpack:*)",
+      "Bash(git -C /Users/shivamawasthi/Desktop/MLProjects/projects/3dChessAI init:*)",
+      "Bash(git -C /Users/shivamawasthi/Desktop/MLProjects/projects/3dChessAI config:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
