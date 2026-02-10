@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "3D Chess: Human vs LLM AI",
   "engines": {
-    "node": "16.4.2"
+    "node": "24.x"
   },
   "scripts": {
     "start:dev": "npm run build:dev && webpack serve --config webpack.dev.config.js",
