@@ -21,7 +21,8 @@
       "utils/*": ["utils/*"],
       "colors/*": ["colors/*"],
       "llm/*": ["llm/*"],
-      "ui/*": ["ui/*"]
+      "ui/*": ["ui/*"],
+      "events/*": ["events/*"]
     }
   },
   "include": [ "src/**/*.ts", "global.d.ts"],

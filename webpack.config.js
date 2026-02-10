@@ -21,7 +21,8 @@ module.exports = {
       utils: path.resolve(__dirname, "./src/utils"),
       colors: path.resolve(__dirname, "./src/colors"),
       llm: path.resolve(__dirname, "./src/llm"),
-      ui: path.resolve(__dirname, "./src/ui")
+      ui: path.resolve(__dirname, "./src/ui"),
+      events: path.resolve(__dirname, "./src/events")
     },
     extensions: [".ts", ".js"],
   },

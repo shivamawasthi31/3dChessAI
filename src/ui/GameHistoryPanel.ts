@@ -4,8 +4,10 @@ import { GameRecord } from "llm/memory/types";
 export class GameHistoryPanel {
   private backdrop: HTMLDivElement;
   private panel: HTMLDivElement;
+  private onImport: ((count: number) => void) | null = null;
 
-  constructor() {
+  constructor(onImport?: (count: number) => void) {
+    this.onImport = onImport || null;
     this.createPanel();
   }
 
@@ -30,10 +32,21 @@ export class GameHistoryPanel {
 
     const btnRow = document.createElement("div");
     btnRow.className = "settings-buttons";
+    btnRow.style.flexWrap = "wrap";
+
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "settings-btn settings-btn-cancel";
+    exportBtn.textContent = "Export";
+    exportBtn.onclick = () => this.exportHistory();
+
+    const importBtn = document.createElement("button");
+    importBtn.className = "settings-btn settings-btn-cancel";
+    importBtn.textContent = "Import";
+    importBtn.onclick = () => this.triggerImport();
 
     const clearBtn = document.createElement("button");
     clearBtn.className = "settings-btn settings-btn-cancel";
-    clearBtn.textContent = "Clear History";
+    clearBtn.textContent = "Clear";
     clearBtn.onclick = () => {
       GameHistoryStore.clearHistory();
       this.refreshList();
@@ -44,6 +57,8 @@ export class GameHistoryPanel {
     closeBtn.textContent = "Close";
     closeBtn.onclick = () => this.hide();
 
+    btnRow.appendChild(exportBtn);
+    btnRow.appendChild(importBtn);
     btnRow.appendChild(clearBtn);
     btnRow.appendChild(closeBtn);
     this.panel.appendChild(btnRow);
@@ -53,10 +68,42 @@ export class GameHistoryPanel {
     this.backdrop.style.display = "none";
   }
 
+  private exportHistory(): void {
+    const json = GameHistoryStore.exportAll();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chess-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private triggerImport(): void {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const result = GameHistoryStore.importFromJSON(reader.result as string);
+          this.refreshList();
+          if (this.onImport) this.onImport(result.imported);
+        } catch (e) {
+          console.error("Import failed:", e);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
   private refreshList(): void {
     const list = document.getElementById("history-list")!;
     list.innerHTML = "";
-
     const history = GameHistoryStore.getHistory();
 
     if (history.length === 0) {
@@ -100,7 +147,6 @@ export class GameHistoryPanel {
       </div>
     `;
 
-    // Click to expand PGN
     const pgnEl = document.createElement("div");
     pgnEl.className = "history-pgn";
     pgnEl.textContent = game.pgn;

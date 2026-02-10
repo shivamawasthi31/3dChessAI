@@ -30,6 +30,8 @@ export class LLMSettingsStore {
         model: "gpt-4o",
       },
       playStyle: "balanced",
+      personality: "chill",
+      insightsEnabled: true,
     };
   }
 }

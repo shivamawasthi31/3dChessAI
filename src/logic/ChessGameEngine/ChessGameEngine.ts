@@ -28,6 +28,8 @@ import {
 } from "utils/chess";
 import { LLMEngine } from "llm/LLMEngine";
 import { LLMSettings, OnThinkingUpdate } from "llm/types";
+import { InsightEngine } from "llm/InsightEngine";
+import { eventBus } from "events/EventBus";
 
 export class ChessGameEngine {
   private _chessBoard: ChessBoard;
@@ -51,6 +53,7 @@ export class ChessGameEngine {
   private llmSettings: LLMSettings | null = null;
   private onThinkingUpdate: OnThinkingUpdate | null = null;
   private aiMoveCallback: AiMoveCallback | null = null;
+  private insightEngine: InsightEngine | null = null;
 
   constructor(world: World, loader: GLTFLoader) {
     this.world = world;
@@ -119,7 +122,6 @@ export class ChessGameEngine {
     const move = await this.llmEngine.calcMove();
 
     if (!move) {
-      // Fallback to minimax
       console.log("[Chess] LLM failed, falling back to minimax");
       this.worker.postMessage({ type: "aiMove", playerMove });
       return;
@@ -128,6 +130,18 @@ export class ChessGameEngine {
     const actionResult = this.performAiMove(move);
     const isGameOver = this.chessGame.game_over();
 
+    // Emit AI move event
+    const pieceCounts = this.chessGame.fen().split(" ")[0];
+    const totalPieces = (pieceCounts.match(/[pnbrqkPNBRQK]/g) || []).length;
+    eventBus.emit("ai:move", {
+      move,
+      fen: this.chessGame.fen(),
+      moveNumber: this.chessGame.history().length,
+      isCapture: !!move.captured,
+      isCheck: move.san.includes("+"),
+      boardSummary: `${totalPieces} pieces on board`,
+    });
+
     if (this.aiMoveCallback) {
       this.aiMoveCallback(actionResult);
     }
@@ -135,6 +149,10 @@ export class ChessGameEngine {
 
     if (isGameOver) {
       this.handleLLMGameEnd();
+      eventBus.emit("game:end", {
+        result: this.getGameResult(),
+        playerColor: this.startingPlayerSide === "w" ? "white" : "black",
+      });
       this.onEndGameCallback(this.chessGame, this.startingPlayerSide);
     }
   }
@@ -154,7 +172,31 @@ export class ChessGameEngine {
   }
 
   private performPlayerMove(droppedField: Object3D): MoveResult {
-    return this.handlePieceMove(droppedField, this.selected);
+    const fenBefore = this.chessGame.fen();
+    const result = this.handlePieceMove(droppedField, this.selected);
+
+    // Emit player move event with insight
+    if (result.move) {
+      const insight = this.insightEngine
+        ? this.insightEngine.analyzePlayerMove(fenBefore, result.move.san)
+        : null;
+
+      const pieceCounts = this.chessGame.fen().split(" ")[0];
+      const totalPieces = (pieceCounts.match(/[pnbrqkPNBRQK]/g) || []).length;
+      const boardSummary = `${totalPieces} pieces on board`;
+
+      eventBus.emit("player:move", {
+        move: result.move,
+        fen: this.chessGame.fen(),
+        moveNumber: this.chessGame.history().length,
+        isCapture: !!result.move.captured,
+        isCheck: result.move.san.includes("+"),
+        boardSummary,
+        insight,
+      });
+    }
+
+    return result;
   }
 
   private dropPiece(droppedField: Object3D): ActionResult {
@@ -168,6 +210,11 @@ export class ChessGameEngine {
     const isGameOver = this.chessGame.game_over();
 
     if (isGameOver) {
+      this.handleLLMGameEnd();
+      eventBus.emit("game:end", {
+        result: this.getGameResult(),
+        playerColor: this.startingPlayerSide === "w" ? "white" : "black",
+      });
       this.onEndGameCallback(this.chessGame, this.startingPlayerSide);
     }
 
@@ -176,6 +223,13 @@ export class ChessGameEngine {
     }
 
     return { removedPiecesIds, promotedPiece };
+  }
+
+  private getGameResult(): "white" | "black" | "draw" {
+    if (this.chessGame.in_checkmate()) {
+      return this.chessGame.turn() === "w" ? "black" : "white";
+    }
+    return "draw";
   }
 
   private createWebWorkerCallback(cb: AiMoveCallback): void {
@@ -566,29 +620,33 @@ export class ChessGameEngine {
     onEndGame: OnEndGame,
     onPromotion: OnPromotion,
     llmSettings?: LLMSettings,
-    onThinkingUpdate?: OnThinkingUpdate
+    onThinkingUpdate?: OnThinkingUpdate,
+    insightEngine?: InsightEngine
   ): PieceColor {
     this.onEndGameCallback = onEndGame;
     this.onPromotionCallback = onPromotion;
     this.aiMoveCallback = aiMoveCallback;
     this.llmSettings = llmSettings || null;
     this.onThinkingUpdate = onThinkingUpdate || null;
+    this.insightEngine = insightEngine || null;
 
     this.drawSide();
     this.gameInterface.init(this.startingPlayerSide);
     this.addWebWorkerListener(aiMoveCallback);
 
-    // Initialize LLM engine if settings are provided and enabled
     if (llmSettings?.enabled && llmSettings.config.apiKey) {
       this.llmEngine = new LLMEngine(
         llmSettings,
         onThinkingUpdate || (() => {})
       );
       this.llmEngine.init(this.chessGame.fen());
-      console.log(`[Chess] LLM mode enabled: ${llmSettings.config.provider}/${llmSettings.config.model}`);
     }
 
     this.initChessAi();
+
+    eventBus.emit("game:start", {
+      playerColor: this.startingPlayerSide === "w" ? "white" : "black",
+    });
 
     return this.startingPlayerSide;
   }

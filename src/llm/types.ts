@@ -1,6 +1,8 @@
 export type LLMProviderType = "openai" | "anthropic" | "gemini" | "groq";
 
 export type PlayStyle = "aggressive" | "defensive" | "balanced";
+export type AIPersonality = "chill" | "savage";
+export type MoveQuality = "brilliant" | "good" | "inaccuracy" | "blunder" | "missed_win";
 
 export interface LLMConfig {
   provider: LLMProviderType;
@@ -13,6 +15,21 @@ export interface LLMSettings {
   enabled: boolean;
   config: LLMConfig;
   playStyle: PlayStyle;
+  personality: AIPersonality;
+  insightsEnabled: boolean;
+}
+
+export interface TrashTalkUpdate {
+  text: string;
+  trigger: "player_move" | "ai_move" | "capture" | "check" | "game_end";
+  personality: AIPersonality;
+}
+
+export interface MoveInsight {
+  playerMove: string;
+  betterMove?: string;
+  explanation: string;
+  quality: MoveQuality;
 }
 
 export interface LLMRequest {

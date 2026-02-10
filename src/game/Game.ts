@@ -10,6 +10,16 @@ import { LLMSettingsStore } from "llm/LLMSettingsStore";
 import { SettingsModal } from "ui/SettingsModal";
 import { ThinkingPanel } from "ui/ThinkingPanel";
 import { GameHistoryPanel } from "ui/GameHistoryPanel";
+import { ToastSystem } from "ui/ToastSystem";
+import { PlayerHeader } from "ui/PlayerHeader";
+import { InsightBanner } from "ui/InsightBanner";
+import { FooterAd } from "ui/FooterAd";
+import { EndGameStatsPanel } from "ui/EndGameStatsPanel";
+import { GamificationEngine } from "./GamificationEngine";
+import { PersonalityEngine } from "llm/PersonalityEngine";
+import { InsightEngine } from "llm/InsightEngine";
+import { NameGenerator } from "llm/NameGenerator";
+import { eventBus } from "events/EventBus";
 
 export class Game {
   private width = window.innerWidth;
@@ -21,30 +31,95 @@ export class Game {
   private activeScene: BasicScene | null;
 
   private options: GameOptions;
-
   private resizeListener: () => void;
 
   private llmSettings: LLMSettings;
   private settingsModal: SettingsModal;
   private thinkingPanel: ThinkingPanel;
   private gameHistoryPanel: GameHistoryPanel;
+  private toastSystem: ToastSystem;
+  private footerAd: FooterAd;
+  private insightBanner: InsightBanner;
+  private endGameStatsPanel: EndGameStatsPanel;
+
+  private playerHeader: PlayerHeader | null = null;
+  private gamificationEngine: GamificationEngine | null = null;
+  private personalityEngine: PersonalityEngine | null = null;
+  private insightEngine: InsightEngine | null = null;
 
   constructor(options?: GameOptions) {
     this.options = options || {};
 
     this.setupLoader();
     this.setupRenderer();
-
     this.addListenerOnResize(this.renderer);
-
     this.activeScene = this.createChessScene();
 
-    // Initialize LLM UI components
+    // UI components
     this.llmSettings = LLMSettingsStore.load() || LLMSettingsStore.getDefaults();
     this.thinkingPanel = new ThinkingPanel();
-    this.gameHistoryPanel = new GameHistoryPanel();
+    this.toastSystem = new ToastSystem();
+    this.insightBanner = new InsightBanner();
+    this.footerAd = new FooterAd();
+    this.endGameStatsPanel = new EndGameStatsPanel();
+    this.gameHistoryPanel = new GameHistoryPanel((count) => {
+      this.toastSystem.show(`Imported ${count} games.`, "info");
+    });
     this.settingsModal = new SettingsModal((settings: LLMSettings) => {
       this.llmSettings = settings;
+    });
+
+    this.setupEventListeners();
+  }
+
+  private setupEventListeners(): void {
+    eventBus.on("player:move", (data: unknown) => {
+      const d = data as {
+        move: { san: string; captured?: string };
+        boardSummary: string;
+        isCapture: boolean;
+        isCheck: boolean;
+        insight: { playerMove: string; betterMove?: string; explanation: string; quality: string } | null;
+      };
+
+      // Show insight banner
+      if (d.insight && this.llmSettings?.insightsEnabled) {
+        this.insightBanner.show(d.insight as any);
+        this.gamificationEngine?.recordMoveQuality(d.insight.quality as any);
+      }
+
+      // Trigger personality reaction
+      if (d.isCapture) {
+        this.personalityEngine?.reactToCapture(d.move.san, d.boardSummary);
+      } else if (d.isCheck) {
+        this.personalityEngine?.reactToCheck(d.move.san, d.boardSummary);
+      } else {
+        this.personalityEngine?.reactToPlayerMove(d.move.san, d.boardSummary);
+      }
+    });
+
+    eventBus.on("ai:move", (data: unknown) => {
+      const d = data as {
+        move: { san: string; captured?: string };
+        boardSummary: string;
+        isCapture: boolean;
+        isCheck: boolean;
+      };
+
+      if (d.isCapture) {
+        this.personalityEngine?.reactToCapture(d.move.san, d.boardSummary);
+      } else if (d.isCheck) {
+        this.personalityEngine?.reactToCheck(d.move.san, d.boardSummary);
+      } else {
+        this.personalityEngine?.celebrateAiMove(d.move.san, d.boardSummary);
+      }
+    });
+
+    eventBus.on("game:end", (data: unknown) => {
+      const d = data as { result: string; playerColor: string };
+      this.personalityEngine?.reactToGameEnd(
+        `Game over: ${d.result}. Player was ${d.playerColor}.`
+      );
     });
   }
 
@@ -62,7 +137,6 @@ export class Game {
     });
 
     this.renderer.setSize(this.width, this.height);
-
     this.renderer.toneMapping = ReinhardToneMapping;
     this.renderer.toneMappingExposure = 3;
     this.renderer.physicallyCorrectLights = true;
@@ -89,82 +163,110 @@ export class Game {
     });
   }
 
-  private createEndPopup(endMsg: string): void {
-    const div = document.createElement("DIV");
-    const btnDiv = document.createElement("DIV");
-    const restartBtn = document.createElement("BUTTON");
-    const span = document.createElement("SPAN");
+  private onEndGame(chessInstance: ChessInstance, playerColor: PieceColor): void {
+    const endMsg = this.getEndGameMessage(chessInstance, playerColor);
+    const isPlayerTurn = chessInstance.turn() === playerColor;
 
-    restartBtn.onclick = () => {
-      this.restartGame();
-      div.remove();
-    };
+    let resultType: "win" | "loss" | "draw" = "draw";
+    if (chessInstance.in_checkmate()) {
+      resultType = isPlayerTurn ? "loss" : "win";
+    }
 
-    restartBtn.innerHTML = "Restart Game";
-    span.innerHTML = endMsg;
+    const stats = this.gamificationEngine?.getEndGameStats() || null;
 
-    btnDiv.classList.add("end-popup-btn");
-    restartBtn.classList.add("btn-small");
+    this.footerAd.show();
+    this.endGameStatsPanel.show(
+      endMsg,
+      resultType,
+      stats,
+      () => this.restartGame(),
+      () => this.gameHistoryPanel.show()
+    );
+  }
 
-    div.classList.add("center-mid");
-    div.classList.add("end-popup");
+  private getEndGameMessage(chessInstance: ChessInstance, playerColor: PieceColor): string {
+    const isPlayerColor = chessInstance.turn() === playerColor;
 
-    div.appendChild(span);
-    btnDiv.appendChild(restartBtn);
-    div.appendChild(btnDiv);
-
-    document.body.appendChild(div);
+    if (chessInstance.in_checkmate()) {
+      return isPlayerColor ? "You lost by checkmate" : "You won by checkmate!";
+    }
+    if (chessInstance.in_stalemate()) return "Draw by stalemate";
+    if (chessInstance.in_threefold_repetition()) return "Draw by threefold repetition";
+    if (chessInstance.in_draw()) return "Draw";
+    return "Game over";
   }
 
   private restartGame(): void {
     this.activeScene.cleanup();
     this.thinkingPanel.clear();
+    this.endGameStatsPanel.destroy();
+    this.playerHeader?.destroy();
+    this.playerHeader = null;
+    this.gamificationEngine?.reset();
     this.activeScene = this.createChessScene();
     this.activeScene.init();
     this.startActiveScene();
   }
 
-  private startActiveScene(): void {
+  private async startActiveScene(): Promise<void> {
     this.thinkingPanel.clear();
-    (this.activeScene as ChessScene).start(
-      (chessInstance: ChessInstance, playerColor: PieceColor) => {
-        this.onEndGame(chessInstance, playerColor);
-      },
-      this.llmSettings?.enabled ? this.llmSettings : undefined,
-      this.llmSettings?.enabled
-        ? (update) => this.thinkingPanel.handleUpdate(update)
-        : undefined
-    );
-  }
+    this.footerAd.hide();
 
-  private onEndGame(chessInstance: ChessInstance, playerColor: PieceColor) {
-    const endMsg = this.getEndGameMessage(chessInstance, playerColor);
+    // Initialize engines if LLM enabled
+    if (this.llmSettings?.enabled && this.llmSettings.config.apiKey) {
+      this.insightEngine = this.llmSettings.insightsEnabled ? new InsightEngine() : null;
+      this.gamificationEngine = new GamificationEngine(this.toastSystem);
 
-    this.createEndPopup(endMsg);
-  }
+      this.personalityEngine = new PersonalityEngine(
+        this.llmSettings.config,
+        this.llmSettings.personality || "chill",
+        (update) => this.toastSystem.show(update.text, "trash_talk")
+      );
 
-  private getEndGameMessage(
-    chessInstance: ChessInstance,
-    playerColor: PieceColor
-  ): string {
-    const isPlayerColor = chessInstance.turn() === playerColor;
+      // Generate AI name
+      let aiName = this.llmSettings.personality === "savage" ? "The Savage" : "Chill Bot";
+      try {
+        aiName = await NameGenerator.generateName(
+          this.llmSettings.config,
+          this.llmSettings.personality || "chill"
+        );
+      } catch {
+        // fallback name already set
+      }
 
-    if (chessInstance.in_checkmate()) {
-      return isPlayerColor
-        ? "You lost the game by checkmate"
-        : "You won the game by checkmate";
-    }
+      // Start the scene (which does drawSide internally)
+      (this.activeScene as ChessScene).start(
+        (chessInstance: ChessInstance, playerColor: PieceColor) => {
+          this.onEndGame(chessInstance, playerColor);
+        },
+        this.llmSettings,
+        (update) => this.thinkingPanel.handleUpdate(update),
+        this.insightEngine
+      );
 
-    if (chessInstance.in_stalemate()) {
-      return "The game ended with draw by stalemate";
-    }
+      // Create header after scene starts (player color is known)
+      // We can't easily get playerColor back from start, so we listen for game:start event
+      const onGameStart = (data: unknown) => {
+        const d = data as { playerColor: string };
+        this.playerHeader = new PlayerHeader(
+          d.playerColor,
+          aiName,
+          this.llmSettings.personality || "chill"
+        );
+        eventBus.off("game:start", onGameStart);
+      };
+      eventBus.on("game:start", onGameStart);
+    } else {
+      // No LLM mode
+      this.insightEngine = null;
+      this.personalityEngine = null;
+      this.gamificationEngine = null;
 
-    if (chessInstance.in_threefold_repetition()) {
-      return "The game ended with threefold repetition";
-    }
-
-    if (chessInstance.in_draw()) {
-      return "The game ended with draw";
+      (this.activeScene as ChessScene).start(
+        (chessInstance: ChessInstance, playerColor: PieceColor) => {
+          this.onEndGame(chessInstance, playerColor);
+        }
+      );
     }
   }
 
@@ -174,7 +276,6 @@ export class Game {
     }
 
     this.activeScene.init();
-
     this.addStartButton();
   }
 
@@ -183,7 +284,6 @@ export class Game {
     div.classList.add("center-mid");
     div.classList.add("menu-buttons");
 
-    // Start Game button
     const startBtn = document.createElement("BUTTON");
     startBtn.classList.add("btn");
     startBtn.innerHTML = "Start Game";
@@ -193,7 +293,6 @@ export class Game {
     };
     div.appendChild(startBtn);
 
-    // AI Settings button
     const settingsBtn = document.createElement("BUTTON");
     settingsBtn.classList.add("btn-small");
     settingsBtn.innerHTML = "AI Settings";
@@ -202,7 +301,6 @@ export class Game {
     };
     div.appendChild(settingsBtn);
 
-    // Game History button
     const historyBtn = document.createElement("BUTTON");
     historyBtn.classList.add("btn-small");
     historyBtn.innerHTML = "Game History";
@@ -212,6 +310,7 @@ export class Game {
     div.appendChild(historyBtn);
 
     document.body.appendChild(div);
+    this.footerAd.show();
   }
 
   private updateGame(): void {
@@ -245,5 +344,11 @@ export class Game {
     this.settingsModal.destroy();
     this.thinkingPanel.destroy();
     this.gameHistoryPanel.destroy();
+    this.toastSystem.destroy();
+    this.insightBanner.destroy();
+    this.footerAd.destroy();
+    this.endGameStatsPanel.destroy();
+    this.playerHeader?.destroy();
+    eventBus.clear();
   }
 }

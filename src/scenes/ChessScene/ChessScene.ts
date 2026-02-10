@@ -11,6 +11,7 @@ import {
   PromotionResult,
 } from "logic/ChessGameEngine/types";
 import { LLMSettings, OnThinkingUpdate } from "llm/types";
+import { InsightEngine } from "llm/InsightEngine";
 
 export class ChessScene extends BasicScene {
   private chessGameEngine: ChessGameEngine;
@@ -180,7 +181,7 @@ export class ChessScene extends BasicScene {
     this.setupScene();
   }
 
-  start(onEndGame: OnEndGame, llmSettings?: LLMSettings, onThinkingUpdate?: OnThinkingUpdate): void {
+  start(onEndGame: OnEndGame, llmSettings?: LLMSettings, onThinkingUpdate?: OnThinkingUpdate, insightEngine?: InsightEngine): void {
     this.orbitals.autoRotate = false;
     const playerStartingSide = this.chessGameEngine.start(
       (actionResult: ActionResult) => {
@@ -195,7 +196,8 @@ export class ChessScene extends BasicScene {
         });
       },
       llmSettings,
-      onThinkingUpdate
+      onThinkingUpdate,
+      insightEngine
     );
     this.setCameraPosition(playerStartingSide);
   }
