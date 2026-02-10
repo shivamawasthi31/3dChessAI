@@ -61,8 +61,8 @@ export class ChessBoard extends BaseGroup {
         const material = new MeshStandardMaterial({
           color,
           side: FrontSide,
-          roughness: 0.6,
-          metalness: 0.0,
+          roughness: 0.3,
+          metalness: 0.4,
         });
         const plane = new Mesh(geometry, material);
 
@@ -98,7 +98,7 @@ export class ChessBoard extends BaseGroup {
     this.chessBase.initModel(this.loader).then((model) => {
       const chessBase = model.scene;
       if (this.useGlassModel) {
-        chessBase.position.set(3.5, -0.15, 3.5);
+        chessBase.position.set(3.5, -3.6, 3.5);
         chessBase.scale.set(4, 4, 4);
       } else {
         chessBase.position.set(3.5, -0.1, 3.5);

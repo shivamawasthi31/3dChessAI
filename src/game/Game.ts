@@ -167,7 +167,7 @@ export class Game {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = ReinhardToneMapping;
-    this.renderer.toneMappingExposure = 2.5;
+    this.renderer.toneMappingExposure = 1.8;
     this.renderer.physicallyCorrectLights = true;
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
