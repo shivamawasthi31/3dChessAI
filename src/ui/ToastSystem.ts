@@ -13,7 +13,7 @@ export class ToastSystem {
 
   show(message: string, type: ToastType, duration?: number): void {
     const durations: Record<ToastType, number> = {
-      trash_talk: 4000,
+      trash_talk: 6000,
       insight: 6000,
       achievement: 5000,
       info: 3000,
@@ -34,8 +34,16 @@ export class ToastSystem {
     // Voice TTS for trash talk
     if (type === "trash_talk" && this.voiceEnabled && typeof speechSynthesis !== "undefined") {
       const utterance = new SpeechSynthesisUtterance(message);
-      utterance.rate = 1.1;
-      utterance.pitch = 0.9;
+      utterance.rate = 0.85;
+      utterance.pitch = 1.0;
+
+      // Pick a natural-sounding voice if available
+      const voices = speechSynthesis.getVoices();
+      const preferred = voices.find(
+        (v) => v.name.includes("Samantha") || v.name.includes("Daniel") || v.name.includes("Google UK English Male")
+      ) || voices.find((v) => v.lang.startsWith("en") && v.localService);
+      if (preferred) utterance.voice = preferred;
+
       speechSynthesis.speak(utterance);
     }
 

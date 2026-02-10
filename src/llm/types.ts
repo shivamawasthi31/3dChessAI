@@ -24,7 +24,7 @@ export interface LLMSettings {
 
 export interface TrashTalkUpdate {
   text: string;
-  trigger: "player_move" | "ai_move" | "capture" | "check" | "game_end";
+  trigger: "player_move" | "ai_move" | "capture" | "check" | "game_end" | "ai_blunder";
   personality: AIPersonality;
 }
 

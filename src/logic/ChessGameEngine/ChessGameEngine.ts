@@ -122,14 +122,30 @@ export class ChessGameEngine {
   private async notifyLLMToMove(playerMove: Move): Promise<void> {
     this.llmEngine.updateWithMove(playerMove);
 
-    const move = await this.llmEngine.calcMove();
+    let move = await Promise.race([
+      this.llmEngine.calcMove(),
+      new Promise<null>((r) => setTimeout(() => r(null), 10000)),
+    ]);
+
+    // Nudge: if timed out, retry once
+    if (!move) {
+      console.log("[Chess] LLM >10s, nudging retry");
+      if (this.onThinkingUpdate) {
+        this.onThinkingUpdate({ text: "Hmm, let me reconsider...", done: false });
+      }
+      move = await Promise.race([
+        this.llmEngine.calcMove(),
+        new Promise<null>((r) => setTimeout(() => r(null), 10000)),
+      ]);
+    }
 
     if (!move) {
-      console.log("[Chess] LLM failed, falling back to minimax");
+      console.log("[Chess] LLM failed after nudge, fallback to minimax");
       this.worker.postMessage({ type: "aiMove", playerMove });
       return;
     }
 
+    const fenBefore = this.chessGame.fen();
     const actionResult = this.performAiMove(move);
     const isGameOver = this.chessGame.game_over();
 
@@ -139,6 +155,7 @@ export class ChessGameEngine {
     eventBus.emit("ai:move", {
       move,
       fen: this.chessGame.fen(),
+      fenBefore,
       moveNumber: this.chessGame.history().length,
       isCapture: !!move.captured,
       isCheck: move.san.includes("+"),

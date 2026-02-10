@@ -55,6 +55,10 @@ export class PersonalityEngine {
     this.makeCall("check", moveSan, boardSummary);
   }
 
+  reactToOwnBadMove(moveSan: string, boardSummary: string): void {
+    this.makeCall("ai_blunder", moveSan, boardSummary);
+  }
+
   reactToGameEnd(boardSummary: string): void {
     this.makeCall("game_end", "Game Over", boardSummary);
   }

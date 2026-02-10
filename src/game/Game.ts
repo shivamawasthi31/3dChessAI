@@ -122,19 +122,31 @@ export class Game {
         boardSummary: string;
         isCapture: boolean;
         isCheck: boolean;
+        fenBefore?: string;
       };
 
       // Clear old trash talk on new move
       this.toastSystem.clearType("trash_talk");
 
-      // Add to move sheet (AI moves have no quality from our insight engine)
+      // Add to move sheet
       this.moveSheet.addMove(d.move.color === "w" ? "w" : "b", d.move.san);
 
-      // Trash talk only on notable AI moves (captures, checks)
+      // Check if AI made a bad move
+      if (this.insightEngine && d.fenBefore) {
+        const aiInsight = this.insightEngine.analyzePlayerMove(d.fenBefore, d.move.san);
+        if (aiInsight.quality === "blunder" || aiInsight.quality === "missed_win") {
+          this.personalityEngine?.reactToOwnBadMove(d.move.san, d.boardSummary);
+          return;
+        }
+      }
+
+      // Trash talk on all AI moves
       if (d.isCapture) {
         this.personalityEngine?.reactToCapture(d.move.san, d.boardSummary);
       } else if (d.isCheck) {
         this.personalityEngine?.reactToCheck(d.move.san, d.boardSummary);
+      } else {
+        this.personalityEngine?.celebrateAiMove(d.move.san, d.boardSummary);
       }
     });
 
