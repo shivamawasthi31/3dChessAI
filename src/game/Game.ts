@@ -257,7 +257,7 @@ export class Game {
       };
       eventBus.on("game:start", onGameStart);
     } else {
-      // No LLM mode
+      // No LLM mode — local minimax
       this.insightEngine = null;
       this.personalityEngine = null;
       this.gamificationEngine = null;
@@ -267,6 +267,13 @@ export class Game {
           this.onEndGame(chessInstance, playerColor);
         }
       );
+
+      const onGameStart = (data: unknown) => {
+        const d = data as { playerColor: string };
+        this.playerHeader = new PlayerHeader(d.playerColor, "Minimax AI", "chill");
+        eventBus.off("game:start", onGameStart);
+      };
+      eventBus.on("game:start", onGameStart);
     }
   }
 
@@ -292,6 +299,18 @@ export class Game {
       div.remove();
     };
     div.appendChild(startBtn);
+
+    // AI mode badge
+    const modeBadge = document.createElement("div");
+    modeBadge.className = "ai-mode-badge";
+    const isLLM = this.llmSettings?.enabled && this.llmSettings.config.apiKey;
+    if (isLLM) {
+      const providerName = this.llmSettings.config.provider.charAt(0).toUpperCase() + this.llmSettings.config.provider.slice(1);
+      modeBadge.innerHTML = `<span class="mode-dot llm"></span> ${providerName} LLM · ${this.llmSettings.personality === "savage" ? "Savage" : "Chill"} mode`;
+    } else {
+      modeBadge.innerHTML = `<span class="mode-dot local"></span> Local Minimax AI · No API key needed`;
+    }
+    div.appendChild(modeBadge);
 
     const settingsBtn = document.createElement("BUTTON");
     settingsBtn.classList.add("btn-small");

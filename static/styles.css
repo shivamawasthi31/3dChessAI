@@ -479,6 +479,33 @@ canvas { display: block; }
   align-items: center;
 }
 
+.ai-mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  backdrop-filter: blur(10px);
+}
+.mode-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.mode-dot.llm {
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px var(--accent-primary);
+}
+.mode-dot.local {
+  background: var(--accent-success);
+  box-shadow: 0 0 6px var(--accent-success);
+}
+
 /* Toast System */
 .toast-container {
   position: fixed;
