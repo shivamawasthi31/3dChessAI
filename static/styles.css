@@ -162,71 +162,57 @@ canvas { display: block; }
 }
 
 /* Thinking Panel */
-.thinking-panel {
+.thinking-popup {
   position: fixed;
-  bottom: 80px;
-  right: 16px;
-  width: 280px;
-  max-height: 220px;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  opacity: 0;
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  color: var(--text-primary);
-  font-family: 'Roboto Mono', monospace;
-  font-size: 12px;
-  transform: translateY(20px);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  overflow: hidden;
+  padding: 12px 20px;
+  max-width: 340px;
+  min-width: 160px;
+  text-align: center;
+  z-index: 200;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-family: 'Roboto Mono', monospace;
 }
 
-.thinking-panel.visible {
-  transform: translateY(0);
+.thinking-popup.visible {
   opacity: 1;
-  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
 }
 
-.thinking-header {
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: bold;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  color: var(--accent-secondary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.thinking-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 12px;
-  line-height: 1.4;
-  word-break: break-word;
-  max-height: 140px;
-}
-
-.thinking-final { padding: 8px 12px; }
-
-.thinking-move {
-  font-size: 18px;
+.thinking-popup-move {
+  font-size: 20px;
   font-weight: bold;
   color: var(--accent-primary);
   margin-bottom: 4px;
 }
 
-.thinking-reasoning { color: var(--text-secondary); line-height: 1.4; font-size: 11px; }
+.thinking-popup-reason {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
 
-.thinking-chunk { opacity: 0; animation: fadeIn 0.15s ease forwards; }
-
-@keyframes fadeIn { to { opacity: 1; } }
+.thinking-dots {
+  font-size: 13px;
+  color: var(--accent-secondary);
+}
+.thinking-dots span {
+  animation: dotPulse 1.2s infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
 
 /* Settings Backdrop */
 .settings-backdrop {
