@@ -98,7 +98,31 @@ export class ChessBoard extends BaseGroup {
     this.chessBase.initModel(this.loader).then((model) => {
       const chessBase = model.scene;
       if (this.useGlassModel) {
-        chessBase.position.set(3.5, -3.6, 3.5);
+        // Remove oversized Cylinder nodes (230-unit wide decorations)
+        const toRemove: Object3D[] = [];
+        chessBase.traverse((child: Object3D) => {
+          if (child.name.startsWith("Cylinder")) {
+            toRemove.push(child);
+          }
+        });
+        toRemove.forEach((c) => c.removeFromParent());
+
+        // Override material to dark reflective
+        chessBase.traverse((child: Mesh) => {
+          if (!child.isMesh) return;
+          const darkColor = new Color("#0a1520");
+          darkColor.convertSRGBToLinear();
+          child.material = new MeshStandardMaterial({
+            color: darkColor,
+            metalness: 0.6,
+            roughness: 0.2,
+          });
+          child.receiveShadow = true;
+        });
+
+        // board_6 surface is at local Y=1.0; scale 4 → Y offset = 4.0
+        // Position Y = -4.05 puts surface at Y = -0.05 (just below procedural squares)
+        chessBase.position.set(3.5, -4.05, 3.5);
         chessBase.scale.set(4, 4, 4);
       } else {
         chessBase.position.set(3.5, -0.1, 3.5);
