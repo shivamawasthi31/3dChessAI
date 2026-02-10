@@ -55,7 +55,7 @@ export class EndGameStatsPanel {
     // Ad
     const ad = document.createElement("div");
     ad.className = "endgame-ad";
-    ad.innerHTML = `<a href="https://workflows.devloytech.in" target="_blank" rel="noopener">workflows.devloytech.in</a>`;
+    ad.innerHTML = `<a href="https://devloytech.in" target="_blank" rel="noopener">Devloy Technologies</a> · <a href="https://workflows.devloytech.in" target="_blank" rel="noopener">Workflows</a>`;
     this.container.appendChild(ad);
 
     document.body.appendChild(this.container);

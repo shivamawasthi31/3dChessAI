@@ -83,8 +83,8 @@ export class Game {
         insight: { playerMove: string; betterMove?: string; explanation: string; quality: string } | null;
       };
 
-      // Show insight banner
-      if (d.insight && this.llmSettings?.insightsEnabled) {
+      // Show insight banner (works in both LLM and minimax modes)
+      if (d.insight && this.insightEngine) {
         this.insightBanner.show(d.insight as any);
         this.gamificationEngine?.recordMoveQuality(d.insight.quality as any);
       }
@@ -236,18 +236,7 @@ export class Game {
         // fallback name already set
       }
 
-      // Start the scene (which does drawSide internally)
-      (this.activeScene as ChessScene).start(
-        (chessInstance: ChessInstance, playerColor: PieceColor) => {
-          this.onEndGame(chessInstance, playerColor);
-        },
-        this.llmSettings,
-        (update) => this.thinkingPanel.handleUpdate(update),
-        this.insightEngine
-      );
-
-      // Create header after scene starts (player color is known)
-      // We can't easily get playerColor back from start, so we listen for game:start event
+      // Register listener BEFORE scene.start() (it emits game:start synchronously)
       const onGameStart = (data: unknown) => {
         const d = data as { playerColor: string };
         this.playerHeader = new PlayerHeader(
@@ -258,17 +247,20 @@ export class Game {
         eventBus.off("game:start", onGameStart);
       };
       eventBus.on("game:start", onGameStart);
-    } else {
-      // No LLM mode — local minimax
-      this.insightEngine = null;
-      this.personalityEngine = null;
-      this.gamificationEngine = null;
 
       (this.activeScene as ChessScene).start(
         (chessInstance: ChessInstance, playerColor: PieceColor) => {
           this.onEndGame(chessInstance, playerColor);
-        }
+        },
+        this.llmSettings,
+        (update) => this.thinkingPanel.handleUpdate(update),
+        this.insightEngine
       );
+    } else {
+      // No LLM mode — local minimax (still get insights + gamification)
+      this.insightEngine = new InsightEngine();
+      this.personalityEngine = null;
+      this.gamificationEngine = new GamificationEngine(this.toastSystem);
 
       const onGameStart = (data: unknown) => {
         const d = data as { playerColor: string };
@@ -276,6 +268,15 @@ export class Game {
         eventBus.off("game:start", onGameStart);
       };
       eventBus.on("game:start", onGameStart);
+
+      (this.activeScene as ChessScene).start(
+        (chessInstance: ChessInstance, playerColor: PieceColor) => {
+          this.onEndGame(chessInstance, playerColor);
+        },
+        undefined,
+        undefined,
+        this.insightEngine
+      );
     }
   }
 

@@ -4,7 +4,7 @@ export class FooterAd {
   constructor() {
     this.el = document.createElement("div");
     this.el.className = "footer-ad";
-    this.el.innerHTML = `Powered by <a href="https://workflows.devloytech.in" target="_blank" rel="noopener">DevloyTech Workflows</a>`;
+    this.el.innerHTML = `Powered by <a href="https://devloytech.in" target="_blank" rel="noopener">Devloy Technologies</a> · <a href="https://workflows.devloytech.in" target="_blank" rel="noopener">Workflows</a>`;
     document.body.appendChild(this.el);
   }
 
