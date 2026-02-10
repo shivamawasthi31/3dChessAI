@@ -11,6 +11,7 @@ export abstract class Piece extends BaseObject {
   private initialMass = 0.1;
   private size: Vec3;
   private _color: PieceColor;
+  private _glassModel: boolean;
 
   private _chessPosition: PieceChessPosition;
 
@@ -21,6 +22,7 @@ export abstract class Piece extends BaseObject {
 
     this._chessPosition = initialChessPosition;
     this._color = color;
+    this._glassModel = options.glassModel || false;
   }
 
   private changeMaterial(): void {
@@ -111,7 +113,8 @@ export abstract class Piece extends BaseObject {
     this.createPsychicsBody(initialPosition);
 
     this.position.copy(initialPosition);
-    this.scale.set(15, 15, 15);
+    const s = this._glassModel ? 4 : 15;
+    this.scale.set(s, s, s);
     return this.body;
   }
 

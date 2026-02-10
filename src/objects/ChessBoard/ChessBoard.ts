@@ -33,9 +33,12 @@ export class ChessBoard extends BaseGroup {
 
   private boardMatrix: Array<Id[]> = [];
 
+  private useGlassModel: boolean;
+
   constructor(name: string, loader: GLTFLoader, useGlassModel = true) {
     super(name);
     this.loader = loader;
+    this.useGlassModel = useGlassModel;
     this.chessBase = new ChessBase("ChessBase", useGlassModel);
   }
 
@@ -94,8 +97,13 @@ export class ChessBoard extends BaseGroup {
   private initChessBase(): void {
     this.chessBase.initModel(this.loader).then((model) => {
       const chessBase = model.scene;
-      chessBase.position.set(3.5, -0.1, 3.5);
-      chessBase.scale.set(16.5, 16, 16.5);
+      if (this.useGlassModel) {
+        chessBase.position.set(3.5, -0.15, 3.5);
+        chessBase.scale.set(4, 4, 4);
+      } else {
+        chessBase.position.set(3.5, -0.1, 3.5);
+        chessBase.scale.set(16.5, 16, 16.5);
+      }
       this.add(chessBase);
     });
   }
