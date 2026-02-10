@@ -77,7 +77,7 @@ export class ChessScene extends BasicScene {
     const intersects = this.raycaster.intersectObjects(this.children);
     const item = intersects.find((el) => el.object.userData.ground);
 
-    const actionResult = this.chessGameEngine.deselect(item.object);
+    const actionResult = this.chessGameEngine.deselect(item ? item.object : null);
 
     if (!actionResult) {
       return;

@@ -5,8 +5,15 @@ export class PlayerHeader {
   private container: HTMLDivElement;
   private playerSide: HTMLDivElement;
   private aiSide: HTMLDivElement;
+  private voiceBtn: HTMLButtonElement;
+  private voiceEnabled = true;
 
-  constructor(playerColor: string, aiName: string, personality: AIPersonality) {
+  constructor(
+    playerColor: string,
+    aiName: string,
+    personality: AIPersonality,
+    onVoiceToggle?: () => boolean
+  ) {
     this.container = document.createElement("div");
     this.container.className = "player-header";
 
@@ -34,9 +41,22 @@ export class PlayerHeader {
       <span class="personality-badge ${badgeClass}">${personality}</span>
     `;
 
+    // Voice toggle button
+    this.voiceBtn = document.createElement("button");
+    this.voiceBtn.className = "voice-toggle";
+    this.voiceBtn.textContent = "Sound: ON";
+    this.voiceBtn.onclick = () => {
+      if (onVoiceToggle) {
+        this.voiceEnabled = onVoiceToggle();
+        this.voiceBtn.textContent = this.voiceEnabled ? "Sound: ON" : "Sound: OFF";
+        this.voiceBtn.classList.toggle("muted", !this.voiceEnabled);
+      }
+    };
+
     this.container.appendChild(this.playerSide);
     this.container.appendChild(vs);
     this.container.appendChild(this.aiSide);
+    this.container.appendChild(this.voiceBtn);
 
     document.body.appendChild(this.container);
   }

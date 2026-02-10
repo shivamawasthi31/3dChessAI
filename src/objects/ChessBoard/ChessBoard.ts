@@ -26,6 +26,8 @@ export const FIELD_NAME = "Field";
 export class ChessBoard extends BaseGroup {
   private size = 8;
   private currentlyDroppable: DroppableField[] = [];
+  private lastMoveHighlights: number[] = [];
+  private kingDangerHighlight: number | null = null;
   private chessBase: ChessBase;
   private loader: GLTFLoader;
 
@@ -140,6 +142,73 @@ export class ChessBoard extends BaseGroup {
     });
 
     this.currentlyDroppable = [];
+  }
+
+  highlightLastMove(fromRow: number, fromCol: number, toRow: number, toCol: number): void {
+    this.clearLastMoveHighlight();
+
+    const color = new Color(0xffa502);
+    color.convertSRGBToLinear();
+
+    const addHighlight = (row: number, col: number) => {
+      const geometry = new BoxGeometry(0.95, 0.04, 0.95);
+      const material = new MeshStandardMaterial({
+        color,
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.5,
+        metalness: 0.0,
+      });
+      const mesh = new Mesh(geometry, material);
+      const plane = this.getObjectById(this.boardMatrix[row][col]) as Mesh;
+      mesh.position.copy(plane.position);
+      mesh.position.setY(0.02);
+      this.add(mesh);
+      this.lastMoveHighlights.push(mesh.id);
+    };
+
+    addHighlight(fromRow, fromCol);
+    addHighlight(toRow, toCol);
+  }
+
+  clearLastMoveHighlight(): void {
+    for (const id of this.lastMoveHighlights) {
+      const obj = this.getObjectById(id);
+      if (obj) this.remove(obj);
+    }
+    this.lastMoveHighlights = [];
+  }
+
+  highlightKingDanger(row: number, col: number): void {
+    this.clearKingDanger();
+
+    const color = new Color(0xff4444);
+    color.convertSRGBToLinear();
+
+    const geometry = new BoxGeometry(0.95, 0.06, 0.95);
+    const material = new MeshStandardMaterial({
+      color,
+      transparent: true,
+      opacity: 0.5,
+      roughness: 0.3,
+      metalness: 0.0,
+      emissive: color,
+      emissiveIntensity: 0.6,
+    });
+    const mesh = new Mesh(geometry, material);
+    const plane = this.getObjectById(this.boardMatrix[row][col]) as Mesh;
+    mesh.position.copy(plane.position);
+    mesh.position.setY(0.03);
+    this.add(mesh);
+    this.kingDangerHighlight = mesh.id;
+  }
+
+  clearKingDanger(): void {
+    if (this.kingDangerHighlight !== null) {
+      const obj = this.getObjectById(this.kingDangerHighlight);
+      if (obj) this.remove(obj);
+      this.kingDangerHighlight = null;
+    }
   }
 
   getFieldId(row: number, column: number): number {

@@ -861,3 +861,86 @@ body.game-active .landing-page { display: none; }
 }
 
 .endgame-ad a:hover { color: var(--accent-secondary); }
+
+/* Move Sheet */
+.move-sheet {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 200px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-glass);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  z-index: 100;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.move-sheet-header {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  padding: 2px 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.move-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.move-sheet th {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.move-sheet td {
+  padding: 2px 4px;
+}
+
+.move-sheet .move-num {
+  color: var(--text-muted);
+  width: 24px;
+}
+
+.move-sheet tr.move-bad td {
+  color: var(--accent-danger);
+}
+
+.move-sheet tr.move-brilliant td {
+  color: var(--accent-success);
+}
+
+/* Voice Toggle */
+.voice-toggle {
+  background: rgba(108, 92, 231, 0.15);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  color: var(--text-primary);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.voice-toggle:hover {
+  background: rgba(108, 92, 231, 0.25);
+}
+
+.voice-toggle.muted {
+  background: rgba(255, 118, 117, 0.15);
+  border-color: rgba(255, 118, 117, 0.3);
+  color: var(--accent-danger);
+}

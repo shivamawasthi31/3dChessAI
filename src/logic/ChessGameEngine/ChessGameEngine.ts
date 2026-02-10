@@ -54,6 +54,7 @@ export class ChessGameEngine {
   private onThinkingUpdate: OnThinkingUpdate | null = null;
   private aiMoveCallback: AiMoveCallback | null = null;
   private insightEngine: InsightEngine | null = null;
+  private isAiTurn = false;
 
   constructor(world: World, loader: GLTFLoader) {
     this.world = world;
@@ -106,6 +107,7 @@ export class ChessGameEngine {
   }
 
   private notifyAiToMove(playerMove: Move) {
+    this.isAiTurn = true;
     this.gameInterface.enableOpponentTurnNotification();
 
     if (this.llmEngine && this.llmSettings?.enabled) {
@@ -142,10 +144,12 @@ export class ChessGameEngine {
       boardSummary: `${totalPieces} pieces on board`,
     });
 
+    this.isAiTurn = false;
     if (this.aiMoveCallback) {
       this.aiMoveCallback(actionResult);
     }
     this.gameInterface.disableOpponentTurnNotification();
+    eventBus.emit("turn:change", { isPlayerTurn: true });
 
     if (isGameOver) {
       this.handleLLMGameEnd();
@@ -219,6 +223,7 @@ export class ChessGameEngine {
     }
 
     if (!stopAi && !isGameOver) {
+      eventBus.emit("turn:change", { isPlayerTurn: false });
       this.notifyAiToMove(playerMove);
     }
 
@@ -241,8 +246,10 @@ export class ChessGameEngine {
       const actionResult = this.performAiMove(e.data.aiMove);
       const isGameOver = this.chessGame.game_over();
 
+      this.isAiTurn = false;
       cb(actionResult);
       this.gameInterface.disableOpponentTurnNotification();
+      eventBus.emit("turn:change", { isPlayerTurn: true });
 
       if (!isGameOver) {
         return;
@@ -305,12 +312,42 @@ export class ChessGameEngine {
 
     this.movePieceToField(field, piece);
 
+    // Highlight last move
+    this._chessBoard.highlightLastMove(
+      fromPosition.row, fromPosition.column,
+      toPosition.row, toPosition.column
+    );
+
+    // Highlight king if in check
+    this._chessBoard.clearKingDanger();
+    if (this.chessGame.in_check() || this.chessGame.in_checkmate()) {
+      this.highlightKingInDanger();
+    }
+
     return {
       removedPiecesIds,
       move,
       promotedPiece: promoted,
       stopAi: typeof result === "boolean" && result,
     };
+  }
+
+  private highlightKingInDanger(): void {
+    // Find the king of the side currently in check (the side whose turn it is)
+    const turn = this.chessGame.turn();
+    const board = this.chessGame.board();
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = board[r][c];
+        if (piece && piece.type === "k" && piece.color === turn) {
+          // chess.js board is [rank8..rank1][a..h], we need to map to our matrix
+          // board[0] = rank 8, board[7] = rank 1
+          // Our board: row 0 = rank 1, row 7 = rank 8
+          this._chessBoard.highlightKingDanger(7 - r, c);
+          return;
+        }
+      }
+    }
   }
 
   private capturePiece(move: Move): number | undefined {
@@ -531,10 +568,12 @@ export class ChessGameEngine {
 
     const actionResult = this.performAiMove(move);
 
+    this.isAiTurn = false;
     if (this.aiMoveCallback) {
       this.aiMoveCallback(actionResult);
     }
     this.gameInterface.disableOpponentTurnNotification();
+    eventBus.emit("turn:change", { isPlayerTurn: true });
 
     if (this.chessGame.game_over()) {
       this.onEndGameCallback(this.chessGame, this.startingPlayerSide);
@@ -577,7 +616,7 @@ export class ChessGameEngine {
   select(piece: Piece): void {
     const { color } = piece;
 
-    if (!this.isPlayerColor(color)) {
+    if (this.isAiTurn || !this.isPlayerColor(color)) {
       return;
     }
 
@@ -588,11 +627,10 @@ export class ChessGameEngine {
     this.setSelectedPiece(piece);
   }
 
-  deselect(intersectedField: Object3D): ActionResult | undefined {
-    const { droppable } = intersectedField.userData;
+  deselect(intersectedField: Object3D | null): ActionResult | undefined {
     let actionResult: ActionResult;
 
-    if (!droppable) {
+    if (!intersectedField || !intersectedField.userData?.droppable) {
       this.resetSelectedPiecePosition();
     } else {
       actionResult = this.dropPiece(intersectedField);
@@ -647,6 +685,11 @@ export class ChessGameEngine {
     eventBus.emit("game:start", {
       playerColor: this.startingPlayerSide === "w" ? "white" : "black",
     });
+
+    // If player is white, it's their turn; if black, AI goes first
+    const isPlayerFirst = this.startingPlayerSide === "w";
+    this.isAiTurn = !isPlayerFirst;
+    eventBus.emit("turn:change", { isPlayerTurn: isPlayerFirst });
 
     return this.startingPlayerSide;
   }

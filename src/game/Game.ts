@@ -19,6 +19,7 @@ import { GamificationEngine } from "./GamificationEngine";
 import { PersonalityEngine } from "llm/PersonalityEngine";
 import { InsightEngine } from "llm/InsightEngine";
 import { NameGenerator } from "llm/NameGenerator";
+import { MoveSheet } from "ui/MoveSheet";
 import { eventBus } from "events/EventBus";
 
 export class Game {
@@ -46,6 +47,8 @@ export class Game {
   private gamificationEngine: GamificationEngine | null = null;
   private personalityEngine: PersonalityEngine | null = null;
   private insightEngine: InsightEngine | null = null;
+  private moveSheet: MoveSheet;
+  private moveNumber = 1;
 
   constructor(options?: GameOptions) {
     this.options = options || {};
@@ -62,6 +65,7 @@ export class Game {
     this.insightBanner = new InsightBanner();
     this.footerAd = new FooterAd();
     this.endGameStatsPanel = new EndGameStatsPanel();
+    this.moveSheet = new MoveSheet();
     this.gameHistoryPanel = new GameHistoryPanel((count) => {
       this.toastSystem.show(`Imported ${count} games.`, "info");
     });
@@ -76,44 +80,64 @@ export class Game {
   private setupEventListeners(): void {
     eventBus.on("player:move", (data: unknown) => {
       const d = data as {
-        move: { san: string; captured?: string };
+        move: { san: string; captured?: string; color?: string };
         boardSummary: string;
         isCapture: boolean;
         isCheck: boolean;
         insight: { playerMove: string; betterMove?: string; explanation: string; quality: string } | null;
       };
 
-      // Show insight banner (works in both LLM and minimax modes)
+      // Clear old trash talk on new move
+      this.toastSystem.clearType("trash_talk");
+
+      // Add to move sheet
+      const quality = d.insight?.quality || null;
+      const playerIsWhite = this.playerHeader ? true : true; // determined by color in move
+      this.moveSheet.addMove(
+        d.move.color === "w" ? "w" : "b",
+        d.move.san,
+        quality as any
+      );
+
+      // Show insight banner
       if (d.insight && this.insightEngine) {
         this.insightBanner.show(d.insight as any);
         this.gamificationEngine?.recordMoveQuality(d.insight.quality as any);
       }
 
-      // Trigger personality reaction
-      if (d.isCapture) {
-        this.personalityEngine?.reactToCapture(d.move.san, d.boardSummary);
+      // Trash talk only at major errors (blunders/missed wins) or checks
+      if (d.insight && (d.insight.quality === "blunder" || d.insight.quality === "missed_win")) {
+        this.personalityEngine?.reactToPlayerMove(d.move.san, d.boardSummary);
       } else if (d.isCheck) {
         this.personalityEngine?.reactToCheck(d.move.san, d.boardSummary);
-      } else {
-        this.personalityEngine?.reactToPlayerMove(d.move.san, d.boardSummary);
       }
     });
 
     eventBus.on("ai:move", (data: unknown) => {
       const d = data as {
-        move: { san: string; captured?: string };
+        move: { san: string; captured?: string; color?: string };
         boardSummary: string;
         isCapture: boolean;
         isCheck: boolean;
       };
 
+      // Clear old trash talk on new move
+      this.toastSystem.clearType("trash_talk");
+
+      // Add to move sheet (AI moves have no quality from our insight engine)
+      this.moveSheet.addMove(d.move.color === "w" ? "w" : "b", d.move.san);
+
+      // Trash talk only on notable AI moves (captures, checks)
       if (d.isCapture) {
         this.personalityEngine?.reactToCapture(d.move.san, d.boardSummary);
       } else if (d.isCheck) {
         this.personalityEngine?.reactToCheck(d.move.san, d.boardSummary);
-      } else {
-        this.personalityEngine?.celebrateAiMove(d.move.san, d.boardSummary);
       }
+    });
+
+    eventBus.on("turn:change", (data: unknown) => {
+      const d = data as { isPlayerTurn: boolean };
+      this.playerHeader?.setTurn(d.isPlayerTurn);
     });
 
     eventBus.on("game:end", (data: unknown) => {
@@ -206,6 +230,7 @@ export class Game {
     this.playerHeader?.destroy();
     this.playerHeader = null;
     this.gamificationEngine?.reset();
+    this.moveSheet.clear();
     this.activeScene = this.createChessScene();
     this.showLandingPage();
   }
@@ -237,13 +262,17 @@ export class Game {
       }
 
       // Register listener BEFORE scene.start() (it emits game:start synchronously)
+      const voiceToggle = () => this.toastSystem.toggleVoice();
       const onGameStart = (data: unknown) => {
         const d = data as { playerColor: string };
         this.playerHeader = new PlayerHeader(
           d.playerColor,
           aiName,
-          this.llmSettings.personality || "chill"
+          this.llmSettings.personality || "chill",
+          voiceToggle
         );
+        this.moveSheet.show();
+        this.moveNumber = 1;
         eventBus.off("game:start", onGameStart);
       };
       eventBus.on("game:start", onGameStart);
@@ -262,9 +291,12 @@ export class Game {
       this.personalityEngine = null;
       this.gamificationEngine = new GamificationEngine(this.toastSystem);
 
+      const voiceToggle = () => this.toastSystem.toggleVoice();
       const onGameStart = (data: unknown) => {
         const d = data as { playerColor: string };
-        this.playerHeader = new PlayerHeader(d.playerColor, "Minimax AI", "chill");
+        this.playerHeader = new PlayerHeader(d.playerColor, "Minimax AI", "chill", voiceToggle);
+        this.moveSheet.show();
+        this.moveNumber = 1;
         eventBus.off("game:start", onGameStart);
       };
       eventBus.on("game:start", onGameStart);
@@ -361,6 +393,7 @@ export class Game {
     this.insightBanner.destroy();
     this.footerAd.destroy();
     this.endGameStatsPanel.destroy();
+    this.moveSheet.destroy();
     this.playerHeader?.destroy();
     eventBus.clear();
   }
