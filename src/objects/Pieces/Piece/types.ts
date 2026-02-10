@@ -7,4 +7,5 @@ export interface PieceChessPosition {
 export interface PieceOptions {
   initialChessPosition: PieceChessPosition;
   color: PieceColor;
+  glassModel?: boolean;
 }

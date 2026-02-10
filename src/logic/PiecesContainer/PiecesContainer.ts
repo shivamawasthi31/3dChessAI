@@ -23,12 +23,16 @@ export const KING_NAME = "King";
 
 export class PiecesContainer {
   private pieces: Pieces;
+  private useGlassModel: boolean;
 
   constructor(
     private chessBoard: ChessBoard,
     private loader: GLTFLoader,
-    private world: World
-  ) {}
+    private world: World,
+    useGlassModel = true
+  ) {
+    this.useGlassModel = useGlassModel;
+  }
 
   private initPawns(color: PieceColor): Pawn[] {
     const pawns: Pawn[] = [];
@@ -39,6 +43,7 @@ export class PiecesContainer {
       const pawn = new Pawn(name, {
         initialChessPosition: { row, column: i },
         color,
+        glassModel: this.useGlassModel,
       });
 
       this.setupPiecePosition(pawn, { row, column: i });
@@ -72,6 +77,7 @@ export class PiecesContainer {
     const rook = new Rook(name, {
       initialChessPosition: chessPosition,
       color,
+      glassModel: this.useGlassModel,
     });
 
     this.setupPiecePosition(rook, chessPosition);
@@ -103,6 +109,7 @@ export class PiecesContainer {
     const knight = new Knight(name, {
       initialChessPosition: chessPosition,
       color,
+      glassModel: this.useGlassModel,
     });
 
     this.setupPiecePosition(knight, chessPosition);
@@ -139,6 +146,7 @@ export class PiecesContainer {
     const bishop = new Bishop(name, {
       initialChessPosition: chessPosition,
       color,
+      glassModel: this.useGlassModel,
     });
 
     this.setupPiecePosition(bishop, chessPosition);
@@ -171,6 +179,7 @@ export class PiecesContainer {
     const queen = new Queen(name, {
       initialChessPosition: position,
       color,
+      glassModel: this.useGlassModel,
     });
 
     this.setupPiecePosition(queen, position);
@@ -186,6 +195,7 @@ export class PiecesContainer {
     const king = new King(name, {
       initialChessPosition: { row, column },
       color,
+      glassModel: this.useGlassModel,
     });
 
     this.setupPiecePosition(king, { row, column });

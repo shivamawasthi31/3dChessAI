@@ -11,12 +11,15 @@ export interface LLMConfig {
   proxyUrl?: string;
 }
 
+export type PieceStyle = "classic" | "glass";
+
 export interface LLMSettings {
   enabled: boolean;
   config: LLMConfig;
   playStyle: PlayStyle;
   personality: AIPersonality;
   insightsEnabled: boolean;
+  pieceStyle?: PieceStyle;
 }
 
 export interface TrashTalkUpdate {

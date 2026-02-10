@@ -1,4 +1,4 @@
-import { LLMSettings, LLMProviderType, PlayStyle, AIPersonality, ProviderInfo } from "llm/types";
+import { LLMSettings, LLMProviderType, PlayStyle, AIPersonality, PieceStyle, ProviderInfo } from "llm/types";
 import { LLMSettingsStore } from "llm/LLMSettingsStore";
 import { getAllProviderInfos } from "llm/providers";
 
@@ -76,6 +76,12 @@ export class SettingsModal {
     );
     gameplayContent.appendChild(this.createPersonalityRow());
     gameplayContent.appendChild(this.createToggleRow("Enable Move Insights", "llm-insights"));
+    gameplayContent.appendChild(
+      this.createSelectRow("Piece Style", "piece-style", [
+        { value: "glass", label: "Glass (Futuristic)" },
+        { value: "classic", label: "Classic" },
+      ])
+    );
     this.modal.appendChild(gameplayContent);
 
     // Buttons
@@ -250,6 +256,7 @@ export class SettingsModal {
     (this.modal.querySelector("#llm-style") as HTMLSelectElement).value = settings.playStyle;
     (this.modal.querySelector("#llm-proxy") as HTMLInputElement).value = settings.config.proxyUrl || "";
     (this.modal.querySelector("#llm-insights") as HTMLInputElement).checked = settings.insightsEnabled !== false;
+    (this.modal.querySelector("#piece-style") as HTMLSelectElement).value = settings.pieceStyle || "glass";
 
     const personalityEl = this.modal.querySelector("#llm-personality");
     if (personalityEl) {
@@ -278,6 +285,7 @@ export class SettingsModal {
       playStyle: (this.modal.querySelector("#llm-style") as HTMLSelectElement).value as PlayStyle,
       personality: (personalityEl?.dataset.value as AIPersonality) || "chill",
       insightsEnabled: (this.modal.querySelector("#llm-insights") as HTMLInputElement).checked,
+      pieceStyle: (this.modal.querySelector("#piece-style") as HTMLSelectElement).value as PieceStyle,
     };
 
     LLMSettingsStore.save(settings);

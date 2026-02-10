@@ -18,9 +18,9 @@ export class ChessScene extends BasicScene {
   private raycaster: Raycaster;
   private clickPointer: Vector2;
 
-  constructor(props: BasicSceneProps) {
+  constructor(props: BasicSceneProps, useGlassModel = true) {
     super(props);
-    this.chessGameEngine = new ChessGameEngine(this.world, this.loader);
+    this.chessGameEngine = new ChessGameEngine(this.world, this.loader, useGlassModel);
   }
 
   private getCoords(event: MouseEvent): { x: number; y: number } {

@@ -20,6 +20,7 @@ import { PersonalityEngine } from "llm/PersonalityEngine";
 import { InsightEngine } from "llm/InsightEngine";
 import { NameGenerator } from "llm/NameGenerator";
 import { MoveSheet } from "ui/MoveSheet";
+import { CreditBadge } from "ui/CreditBadge";
 import { eventBus } from "events/EventBus";
 
 export class Game {
@@ -48,6 +49,7 @@ export class Game {
   private personalityEngine: PersonalityEngine | null = null;
   private insightEngine: InsightEngine | null = null;
   private moveSheet: MoveSheet;
+  private creditBadge: CreditBadge;
   private moveNumber = 1;
 
   constructor(options?: GameOptions) {
@@ -56,16 +58,17 @@ export class Game {
     this.setupLoader();
     this.setupRenderer();
     this.addListenerOnResize(this.renderer);
-    this.activeScene = this.createChessScene();
 
-    // UI components
+    // Load settings before creating scene (pieceStyle affects model selection)
     this.llmSettings = LLMSettingsStore.load() || LLMSettingsStore.getDefaults();
+    this.activeScene = this.createChessScene();
     this.thinkingPanel = new ThinkingPanel();
     this.toastSystem = new ToastSystem();
     this.insightBanner = new InsightBanner();
     this.footerAd = new FooterAd();
     this.endGameStatsPanel = new EndGameStatsPanel();
     this.moveSheet = new MoveSheet();
+    this.creditBadge = new CreditBadge();
     this.gameHistoryPanel = new GameHistoryPanel((count) => {
       this.toastSystem.show(`Imported ${count} games.`, "info");
     });
@@ -179,6 +182,7 @@ export class Game {
   }
 
   private createChessScene(): ChessScene {
+    const useGlass = (this.llmSettings?.pieceStyle || "glass") === "glass";
     return new ChessScene({
       renderer: this.renderer,
       loader: this.loader,
@@ -187,7 +191,7 @@ export class Game {
         lightHelpers: this.options.lightHelpers,
         cannonDebugger: this.options.cannonDebugger,
       },
-    });
+    }, useGlass);
   }
 
   private onEndGame(chessInstance: ChessInstance, playerColor: PieceColor): void {

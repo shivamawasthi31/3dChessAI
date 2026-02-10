@@ -32,6 +32,7 @@ export class LLMSettingsStore {
       playStyle: "balanced",
       personality: "chill",
       insightsEnabled: true,
+      pieceStyle: "glass",
     };
   }
 }

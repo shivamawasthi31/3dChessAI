@@ -33,10 +33,10 @@ export class ChessBoard extends BaseGroup {
 
   private boardMatrix: Array<Id[]> = [];
 
-  constructor(name: string, loader: GLTFLoader) {
+  constructor(name: string, loader: GLTFLoader, useGlassModel = true) {
     super(name);
     this.loader = loader;
-    this.chessBase = new ChessBase("ChessBase");
+    this.chessBase = new ChessBase("ChessBase", useGlassModel);
   }
 
   private createBoardMatrix(): void {

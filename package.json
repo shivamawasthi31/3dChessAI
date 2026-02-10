@@ -30,6 +30,9 @@
   "devDependencies": {
     "@commitlint/cli": "17.0.3",
     "@commitlint/config-conventional": "17.0.3",
+    "@gltf-transform/core": "^4.3.0",
+    "@gltf-transform/extensions": "^4.3.0",
+    "@gltf-transform/functions": "^4.3.0",
     "@types/chess.js": "0.13.3",
     "@types/lodash.clonedeep": "4.5.7",
     "@types/three": "0.143.0",

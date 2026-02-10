@@ -56,16 +56,17 @@ export class ChessGameEngine {
   private insightEngine: InsightEngine | null = null;
   private isAiTurn = false;
 
-  constructor(world: World, loader: GLTFLoader) {
+  constructor(world: World, loader: GLTFLoader, useGlassModel = true) {
     this.world = world;
     this.loader = loader;
 
-    this._chessBoard = new ChessBoard("ChessBoard", this.loader);
+    this._chessBoard = new ChessBoard("ChessBoard", this.loader, useGlassModel);
     this.chessGame = new Chess();
     this.piecesContainer = new PiecesContainer(
       this._chessBoard,
       this.loader,
-      this.world
+      this.world,
+      useGlassModel
     );
     this.gameInterface = new GameInterface();
 

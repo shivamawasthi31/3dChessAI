@@ -1,8 +1,10 @@
 import { Piece } from "../Piece/Piece";
 import { PieceOptions } from "../Piece/types";
-import PawnModel from "assets/Pawn/Pawn.glb";
+import ClassicModel from "assets/Pawn/Pawn.glb";
+import GlassModel from "assets/GlassChessSet/Pawn.glb";
+
 export class Pawn extends Piece {
   constructor(name: string, options: PieceOptions) {
-    super(name, PawnModel, options);
+    super(name, options.glassModel ? GlassModel : ClassicModel, options);
   }
 }

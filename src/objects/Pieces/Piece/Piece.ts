@@ -29,7 +29,7 @@ export abstract class Piece extends BaseObject {
     const color = new Color(isWhite ? WHITE_COLOR_PIECE : BLACK_COLOR_PIECE);
     color.convertSRGBToLinear();
 
-    const emissive = new Color(isWhite ? "#00d4ff" : "#ff2244");
+    const emissive = new Color(isWhite ? "#ffe066" : "#8b0000");
     emissive.convertSRGBToLinear();
 
     this.model.scene.traverse((o: Mesh) => {
@@ -44,12 +44,12 @@ export abstract class Piece extends BaseObject {
       o.material = new MeshPhysicalMaterial({
         color,
         emissive,
-        emissiveIntensity: isWhite ? 0.4 : 0.3,
-        metalness: isWhite ? 0.1 : 0.15,
-        roughness: 0.05,
-        transmission: isWhite ? 0.6 : 0.5,
+        emissiveIntensity: isWhite ? 0.5 : 0.4,
+        metalness: isWhite ? 0.3 : 0.2,
+        roughness: isWhite ? 0.08 : 0.12,
+        transmission: isWhite ? 0.5 : 0.35,
         transparent: true,
-        opacity: 0.85,
+        opacity: isWhite ? 0.88 : 0.82,
       });
     });
   }
