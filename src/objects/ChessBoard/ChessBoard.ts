@@ -9,12 +9,11 @@ import {
   convertThreeVector,
 } from "utils/general";
 import {
-  CircleGeometry,
+  BoxGeometry,
   Color,
   FrontSide,
   Mesh,
-  MeshLambertMaterial,
-  MeshPhongMaterial,
+  MeshStandardMaterial,
   Object3D,
   PlaneGeometry,
 } from "three";
@@ -54,9 +53,11 @@ export class ChessBoard extends BaseGroup {
         );
         color.convertSRGBToLinear();
 
-        const material = new MeshPhongMaterial({
+        const material = new MeshStandardMaterial({
           color,
           side: FrontSide,
+          roughness: 0.6,
+          metalness: 0.0,
         });
         const plane = new Mesh(geometry, material);
 
@@ -97,12 +98,20 @@ export class ChessBoard extends BaseGroup {
     });
   }
 
-  private createDropCircle() {
-    const geometry = new CircleGeometry(0.4, 16);
-    const material = new MeshLambertMaterial({ color: "orange" });
-    const circle = new Mesh(geometry, material);
-
-    return circle;
+  private createHighlightBox() {
+    const geometry = new BoxGeometry(0.95, 0.08, 0.95);
+    const color = new Color(0x6c5ce7);
+    color.convertSRGBToLinear();
+    const material = new MeshStandardMaterial({
+      color,
+      transparent: true,
+      opacity: 0.45,
+      roughness: 0.3,
+      metalness: 0.6,
+      emissive: color,
+      emissiveIntensity: 0.8,
+    });
+    return new Mesh(geometry, material);
   }
 
   markPlaneAsDroppable(row: number, column: number): void {
@@ -111,13 +120,12 @@ export class ChessBoard extends BaseGroup {
     const plane = this.getObjectById(planeId) as Mesh;
     plane.userData.droppable = true;
 
-    const dropCircle = this.createDropCircle();
-    dropCircle.position.copy(plane.position);
-    dropCircle.rotation.copy(plane.rotation);
-    dropCircle.position.setY(0.01);
+    const highlight = this.createHighlightBox();
+    highlight.position.copy(plane.position);
+    highlight.position.setY(0.04);
 
-    this.add(dropCircle);
-    this.currentlyDroppable.push({ planeId, circleId: dropCircle.id });
+    this.add(highlight);
+    this.currentlyDroppable.push({ planeId, circleId: highlight.id });
   }
 
   clearMarkedPlanes(): void {

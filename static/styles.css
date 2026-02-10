@@ -27,7 +27,63 @@ html, body, canvas {
   color: var(--text-primary);
 }
 
-canvas { display: block; }
+canvas { display: none; }
+body.game-active canvas { display: block; }
+body.game-active .landing-page { display: none; }
+
+/* Landing Page */
+.landing-page {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 500;
+}
+.landing-logo {
+  width: 140px;
+  height: 140px;
+  border-radius: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 30px rgba(108, 92, 231, 0.4));
+}
+.landing-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 2px;
+}
+.landing-tagline {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+.landing-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.landing-row {
+  display: flex;
+  gap: 12px;
+}
+.landing-footer {
+  position: absolute;
+  bottom: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.landing-footer a {
+  color: var(--accent-secondary);
+  text-decoration: none;
+}
+.landing-footer a:hover { text-decoration: underline; }
 
 /* Glass panel mixin */
 .glass-panel {

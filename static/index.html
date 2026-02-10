@@ -14,6 +14,22 @@
     <link rel="stylesheet" href="styles.css" type="text/css">
 </head>
 <body>
+<div id="landing" class="landing-page">
+    <img src="logo.png" alt="ChessLLM" class="landing-logo">
+    <h1 class="landing-title">ChessLLM</h1>
+    <p class="landing-tagline">3D Chess vs AI — powered by LLMs</p>
+    <div id="landing-mode-badge" class="ai-mode-badge"></div>
+    <div class="landing-buttons">
+        <button id="btn-start" class="btn">Start Game</button>
+        <div class="landing-row">
+            <button id="btn-settings" class="btn-small">AI Settings</button>
+            <button id="btn-history" class="btn-small">Game History</button>
+        </div>
+    </div>
+    <div class="landing-footer">
+        Powered by <a href="https://workflows.devloytech.in" target="_blank" rel="noopener">DevloyTech Workflows</a>
+    </div>
+</div>
 <canvas id="app"></canvas>
 <script src="index.js" type="application/javascript"></script>
 </body>

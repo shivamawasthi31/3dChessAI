@@ -2,7 +2,7 @@ import { ChessInstance, PieceColor } from "chess.js";
 import { CustomLoadingManager } from "logic/LoadingManager/LoadingManager";
 import { BasicScene } from "scenes/BasicScene/BasicScene";
 import { ChessScene } from "scenes/ChessScene/ChessScene";
-import { ReinhardToneMapping, sRGBEncoding, WebGLRenderer } from "three";
+import { PCFSoftShadowMap, ReinhardToneMapping, sRGBEncoding, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { GameOptions } from "./types";
 import { LLMSettings } from "llm/types";
@@ -67,6 +67,7 @@ export class Game {
     });
     this.settingsModal = new SettingsModal((settings: LLMSettings) => {
       this.llmSettings = settings;
+      this.updateModeBadge();
     });
 
     this.setupEventListeners();
@@ -137,11 +138,13 @@ export class Game {
     });
 
     this.renderer.setSize(this.width, this.height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = ReinhardToneMapping;
-    this.renderer.toneMappingExposure = 3;
+    this.renderer.toneMappingExposure = 2.5;
     this.renderer.physicallyCorrectLights = true;
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
   }
 
   private addListenerOnResize(renderer: WebGLRenderer): void {
@@ -204,8 +207,7 @@ export class Game {
     this.playerHeader = null;
     this.gamificationEngine?.reset();
     this.activeScene = this.createChessScene();
-    this.activeScene.init();
-    this.startActiveScene();
+    this.showLandingPage();
   }
 
   private async startActiveScene(): Promise<void> {
@@ -278,58 +280,49 @@ export class Game {
   }
 
   private initGame(): void {
+    this.wireLandingPage();
+  }
+
+  private updateModeBadge(): void {
+    const badge = document.getElementById("landing-mode-badge");
+    if (!badge) return;
+    const isLLM = this.llmSettings?.enabled && this.llmSettings.config.apiKey;
+    if (isLLM) {
+      const providerName = this.llmSettings.config.provider.charAt(0).toUpperCase() + this.llmSettings.config.provider.slice(1);
+      badge.innerHTML = `<span class="mode-dot llm"></span> ${providerName} LLM · ${this.llmSettings.personality === "savage" ? "Savage" : "Chill"} mode`;
+    } else {
+      badge.innerHTML = `<span class="mode-dot local"></span> Local Minimax AI · No API key needed`;
+    }
+  }
+
+  private wireLandingPage(): void {
+    this.updateModeBadge();
+
+    document.getElementById("btn-start")!.onclick = () => {
+      this.showGameView();
+    };
+    document.getElementById("btn-settings")!.onclick = () => {
+      this.settingsModal.show();
+    };
+    document.getElementById("btn-history")!.onclick = () => {
+      this.gameHistoryPanel.show();
+    };
+  }
+
+  private showGameView(): void {
+    document.body.classList.add("game-active");
+
     if (!this.activeScene) {
       throw new Error("There is no active scene at the moment");
     }
 
     this.activeScene.init();
-    this.addStartButton();
+    this.startActiveScene();
   }
 
-  private addStartButton(): void {
-    const div = document.createElement("DIV");
-    div.classList.add("center-mid");
-    div.classList.add("menu-buttons");
-
-    const startBtn = document.createElement("BUTTON");
-    startBtn.classList.add("btn");
-    startBtn.innerHTML = "Start Game";
-    startBtn.onclick = () => {
-      this.startActiveScene();
-      div.remove();
-    };
-    div.appendChild(startBtn);
-
-    // AI mode badge
-    const modeBadge = document.createElement("div");
-    modeBadge.className = "ai-mode-badge";
-    const isLLM = this.llmSettings?.enabled && this.llmSettings.config.apiKey;
-    if (isLLM) {
-      const providerName = this.llmSettings.config.provider.charAt(0).toUpperCase() + this.llmSettings.config.provider.slice(1);
-      modeBadge.innerHTML = `<span class="mode-dot llm"></span> ${providerName} LLM · ${this.llmSettings.personality === "savage" ? "Savage" : "Chill"} mode`;
-    } else {
-      modeBadge.innerHTML = `<span class="mode-dot local"></span> Local Minimax AI · No API key needed`;
-    }
-    div.appendChild(modeBadge);
-
-    const settingsBtn = document.createElement("BUTTON");
-    settingsBtn.classList.add("btn-small");
-    settingsBtn.innerHTML = "AI Settings";
-    settingsBtn.onclick = () => {
-      this.settingsModal.show();
-    };
-    div.appendChild(settingsBtn);
-
-    const historyBtn = document.createElement("BUTTON");
-    historyBtn.classList.add("btn-small");
-    historyBtn.innerHTML = "Game History";
-    historyBtn.onclick = () => {
-      this.gameHistoryPanel.show();
-    };
-    div.appendChild(historyBtn);
-
-    document.body.appendChild(div);
-    this.footerAd.show();
+  showLandingPage(): void {
+    document.body.classList.remove("game-active");
+    this.updateModeBadge();
   }
 
   private updateGame(): void {

@@ -52,7 +52,7 @@ export abstract class BasicScene extends Scene {
     this.orbitals = new OrbitControls(this.camera, this._renderer.domElement);
     this.orbitals.mouseButtons = {};
     this.orbitals.enableZoom = false;
-    this.background = new Color(0xefefef);
+    this.background = new Color(0x0a0a0f);
     this.world = new World({ gravity: new Vec3(0, -9.82, 0) });
 
     this.world.allowSleep = true;

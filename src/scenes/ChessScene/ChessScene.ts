@@ -174,7 +174,7 @@ export class ChessScene extends BasicScene {
     this.camera.position.set(0, 11, 8);
     this.camera.lookAt(0, 0, 0);
 
-    this.orbitals.autoRotate = true;
+    this.orbitals.autoRotate = false;
     this.setupLights();
     this.setupRaycaster();
     this.chessGameEngine.init();
