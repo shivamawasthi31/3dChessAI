@@ -2,7 +2,7 @@ import { Body, Box, Vec3 } from "cannon-es";
 import { PieceColor } from "chess.js";
 import { BLACK_COLOR_PIECE, WHITE_COLOR_PIECE } from "constants/colors";
 import { BaseObject } from "objects/BaseObject/BaseObject";
-import { Color, Mesh, MeshPhongMaterial, Vector3 } from "three";
+import { Color, Mesh, MeshPhysicalMaterial, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { convertCannonEsQuaternion, convertThreeVector } from "utils/general";
 import { PieceChessPosition, PieceOptions } from "./types";
@@ -24,23 +24,32 @@ export abstract class Piece extends BaseObject {
   }
 
   private changeMaterial(): void {
+    const isWhite = this.color === "w";
+
+    const color = new Color(isWhite ? WHITE_COLOR_PIECE : BLACK_COLOR_PIECE);
+    color.convertSRGBToLinear();
+
+    const emissive = new Color(isWhite ? "#00d4ff" : "#ff2244");
+    emissive.convertSRGBToLinear();
+
     this.model.scene.traverse((o: Mesh) => {
       if (!o.isMesh) {
         return;
       }
 
       o.userData.lastParent = this;
-
       o.castShadow = true;
       o.receiveShadow = true;
 
-      const color = new Color(
-        this.color === "w" ? WHITE_COLOR_PIECE : BLACK_COLOR_PIECE
-      );
-
-      color.convertSRGBToLinear();
-      o.material = new MeshPhongMaterial({
+      o.material = new MeshPhysicalMaterial({
         color,
+        emissive,
+        emissiveIntensity: isWhite ? 0.4 : 0.3,
+        metalness: isWhite ? 0.1 : 0.15,
+        roughness: 0.05,
+        transmission: isWhite ? 0.6 : 0.5,
+        transparent: true,
+        opacity: 0.85,
       });
     });
   }
