@@ -51,6 +51,9 @@ export class Game {
   private moveSheet: MoveSheet;
   private creditBadge: CreditBadge;
   private moveNumber = 1;
+  private leftPanel: HTMLDivElement;
+  private aiCommentary: HTMLDivElement;
+  private commentaryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options?: GameOptions) {
     this.options = options || {};
@@ -69,6 +72,16 @@ export class Game {
     this.endGameStatsPanel = new EndGameStatsPanel();
     this.moveSheet = new MoveSheet();
     this.creditBadge = new CreditBadge();
+
+    // Build left panel: commentary above move sheet
+    this.leftPanel = document.createElement("div");
+    this.leftPanel.className = "left-panel";
+    this.aiCommentary = document.createElement("div");
+    this.aiCommentary.className = "ai-commentary";
+    this.leftPanel.appendChild(this.aiCommentary);
+    this.leftPanel.appendChild(this.moveSheet.getElement());
+    document.body.appendChild(this.leftPanel);
+
     this.gameHistoryPanel = new GameHistoryPanel((count) => {
       this.toastSystem.show(`Imported ${count} games.`, "info");
     });
@@ -90,25 +103,31 @@ export class Game {
         insight: { playerMove: string; betterMove?: string; explanation: string; quality: string } | null;
       };
 
-      // Clear old trash talk on new move
-      this.toastSystem.clearType("trash_talk");
+      this.clearCommentary();
 
       // Add to move sheet
       const quality = d.insight?.quality || null;
-      const playerIsWhite = this.playerHeader ? true : true; // determined by color in move
       this.moveSheet.addMove(
         d.move.color === "w" ? "w" : "b",
         d.move.san,
         quality as any
       );
 
-      // Show insight banner
+      // Show insight in commentary panel
       if (d.insight && this.insightEngine) {
-        this.insightBanner.show(d.insight as any);
+        const labels: Record<string, string> = {
+          brilliant: "Brilliant!", good: "Good", inaccuracy: "Inaccuracy",
+          blunder: "Blunder", missed_win: "Missed Win"
+        };
+        const label = labels[d.insight.quality] || d.insight.quality;
+        this.showCommentary(
+          `${label} — ${d.insight.explanation || `You played ${d.insight.playerMove}`}`,
+          "insight", d.insight.quality
+        );
         this.gamificationEngine?.recordMoveQuality(d.insight.quality as any);
       }
 
-      // Trash talk only at major errors (blunders/missed wins) or checks
+      // Trash talk on major errors or checks
       if (d.insight && (d.insight.quality === "blunder" || d.insight.quality === "missed_win")) {
         this.personalityEngine?.reactToPlayerMove(d.move.san, d.boardSummary);
       } else if (d.isCheck) {
@@ -125,8 +144,7 @@ export class Game {
         fenBefore?: string;
       };
 
-      // Clear old trash talk on new move
-      this.toastSystem.clearType("trash_talk");
+      this.clearCommentary();
 
       // Add to move sheet
       this.moveSheet.addMove(d.move.color === "w" ? "w" : "b", d.move.san);
@@ -179,7 +197,7 @@ export class Game {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = ReinhardToneMapping;
-    this.renderer.toneMappingExposure = 1.8;
+    this.renderer.toneMappingExposure = 2.5;
     this.renderer.physicallyCorrectLights = true;
     this.renderer.outputEncoding = sRGBEncoding;
     this.renderer.shadowMap.enabled = true;
@@ -194,7 +212,7 @@ export class Game {
   }
 
   private createChessScene(): ChessScene {
-    const useGlass = (this.llmSettings?.pieceStyle || "glass") === "glass";
+    const useGlass = false;
     return new ChessScene({
       renderer: this.renderer,
       loader: this.loader,
@@ -247,6 +265,7 @@ export class Game {
     this.playerHeader = null;
     this.gamificationEngine?.reset();
     this.moveSheet.clear();
+    this.clearCommentary();
     this.activeScene = this.createChessScene();
     this.showLandingPage();
   }
@@ -263,7 +282,10 @@ export class Game {
       this.personalityEngine = new PersonalityEngine(
         this.llmSettings.config,
         this.llmSettings.personality || "chill",
-        (update) => this.toastSystem.show(update.text, "trash_talk")
+        (update) => {
+          this.showCommentary(update.text, "trash_talk");
+          this.toastSystem.speak(update.text);
+        }
       );
 
       // Generate AI name
@@ -400,6 +422,31 @@ export class Game {
     }
   }
 
+  private showCommentary(text: string, type: "trash_talk" | "insight", quality?: string): void {
+    this.aiCommentary.className = "ai-commentary visible";
+    if (type === "trash_talk") {
+      this.aiCommentary.classList.add("type-trash_talk");
+    } else if (quality) {
+      this.aiCommentary.classList.add(`type-insight-${quality}`);
+    }
+    const label = type === "trash_talk" ? "AI" : "Analysis";
+    this.aiCommentary.innerHTML = `<div class="ai-commentary-label">${label}</div><div>${text}</div>`;
+    if (this.commentaryTimer) clearTimeout(this.commentaryTimer);
+    this.commentaryTimer = setTimeout(() => {
+      this.aiCommentary.className = "ai-commentary";
+    }, type === "trash_talk" ? 6000 : 8000);
+  }
+
+  private clearCommentary(): void {
+    this.aiCommentary.className = "ai-commentary";
+    this.aiCommentary.innerHTML = "";
+    if (this.commentaryTimer) {
+      clearTimeout(this.commentaryTimer);
+      this.commentaryTimer = null;
+    }
+    if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+  }
+
   cleanup(): void {
     window.removeEventListener("resize", this.resizeListener);
     this.settingsModal.destroy();
@@ -410,6 +457,7 @@ export class Game {
     this.footerAd.destroy();
     this.endGameStatsPanel.destroy();
     this.moveSheet.destroy();
+    this.leftPanel.remove();
     this.playerHeader?.destroy();
     eventBus.clear();
   }

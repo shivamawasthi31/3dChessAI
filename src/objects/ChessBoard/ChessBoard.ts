@@ -61,8 +61,8 @@ export class ChessBoard extends BaseGroup {
         const material = new MeshStandardMaterial({
           color,
           side: FrontSide,
-          roughness: 0.3,
-          metalness: 0.4,
+          roughness: 0.6,
+          metalness: 0.0,
         });
         const plane = new Mesh(geometry, material);
 

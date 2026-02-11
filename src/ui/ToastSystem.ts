@@ -72,6 +72,19 @@ export class ToastSystem {
     return this.voiceEnabled;
   }
 
+  speak(message: string): void {
+    if (!this.voiceEnabled || typeof speechSynthesis === "undefined") return;
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.85;
+    utterance.pitch = 1.0;
+    const voices = speechSynthesis.getVoices();
+    const preferred = voices.find(
+      (v) => v.name.includes("Samantha") || v.name.includes("Daniel") || v.name.includes("Google UK English Male")
+    ) || voices.find((v) => v.lang.startsWith("en") && v.localService);
+    if (preferred) utterance.voice = preferred;
+    speechSynthesis.speak(utterance);
+  }
+
   isVoiceEnabled(): boolean {
     return this.voiceEnabled;
   }

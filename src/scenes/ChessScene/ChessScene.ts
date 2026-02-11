@@ -111,24 +111,24 @@ export class ChessScene extends BasicScene {
 
   private setupLights(): void {
     this.setupLight({
-      color: "#a8d4e6",
+      color: "#FFFFFF",
       position: new Vector3(0, 8, -8),
-      intensity: 2,
+      intensity: 3,
       lookAt: new Vector3(0, 0, 0),
     });
 
     this.setupLight({
-      color: "#c8e6f0",
+      color: "#FFFFFF",
       position: new Vector3(5, 10, 0),
-      intensity: 5,
+      intensity: 8,
       lookAt: new Vector3(0, 0, 0),
       castShadow: true,
     });
 
     this.setupLight({
-      color: "#8ab4c8",
+      color: "#FFFFFF",
       position: new Vector3(0, 8, 8),
-      intensity: 1.5,
+      intensity: 3,
       lookAt: new Vector3(0, 0, 0),
     });
   }

@@ -68,6 +68,10 @@ export class MoveSheet {
     this.pendingWhite = null;
   }
 
+  getElement(): HTMLDivElement {
+    return this.container;
+  }
+
   destroy(): void {
     this.container.remove();
   }

@@ -2,7 +2,7 @@ import { Body, Box, Vec3 } from "cannon-es";
 import { PieceColor } from "chess.js";
 import { BLACK_COLOR_PIECE, WHITE_COLOR_PIECE } from "constants/colors";
 import { BaseObject } from "objects/BaseObject/BaseObject";
-import { Color, Mesh, MeshPhysicalMaterial, Vector3 } from "three";
+import { Color, Mesh, MeshPhongMaterial, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { convertCannonEsQuaternion, convertThreeVector } from "utils/general";
 import { PieceChessPosition, PieceOptions } from "./types";
@@ -31,9 +31,6 @@ export abstract class Piece extends BaseObject {
     const color = new Color(isWhite ? WHITE_COLOR_PIECE : BLACK_COLOR_PIECE);
     color.convertSRGBToLinear();
 
-    const emissive = new Color(isWhite ? "#ffffff" : "#0a2a30");
-    emissive.convertSRGBToLinear();
-
     this.model.scene.traverse((o: Mesh) => {
       if (!o.isMesh) {
         return;
@@ -43,16 +40,7 @@ export abstract class Piece extends BaseObject {
       o.castShadow = true;
       o.receiveShadow = true;
 
-      o.material = new MeshPhysicalMaterial({
-        color,
-        emissive,
-        emissiveIntensity: isWhite ? 0.4 : 0.15,
-        metalness: isWhite ? 0.03 : 0.12,
-        roughness: isWhite ? 0.35 : 0.45,
-        transmission: isWhite ? 0.8 : 0.35,
-        transparent: true,
-        opacity: isWhite ? 0.85 : 0.75,
-      });
+      o.material = new MeshPhongMaterial({ color });
     });
   }
 
@@ -127,9 +115,10 @@ export abstract class Piece extends BaseObject {
   }
 
   update(): void {
+    const yOffset = this._glassModel ? 0.25 : 0;
     this.position.set(
       this.body.position.x,
-      this.body.position.y - this.size.y,
+      this.body.position.y - this.size.y + yOffset,
       this.body.position.z
     );
     this.quaternion.copy(convertCannonEsQuaternion(this.body.quaternion));
