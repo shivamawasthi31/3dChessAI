@@ -20,7 +20,7 @@ import { PersonalityEngine } from "llm/PersonalityEngine";
 import { InsightEngine } from "llm/InsightEngine";
 import { NameGenerator } from "llm/NameGenerator";
 import { MoveSheet } from "ui/MoveSheet";
-import { CreditBadge } from "ui/CreditBadge";
+
 import { eventBus } from "events/EventBus";
 
 export class Game {
@@ -49,7 +49,6 @@ export class Game {
   private personalityEngine: PersonalityEngine | null = null;
   private insightEngine: InsightEngine | null = null;
   private moveSheet: MoveSheet;
-  private creditBadge: CreditBadge;
   private moveNumber = 1;
   private leftPanel: HTMLDivElement;
   private aiCommentary: HTMLDivElement;
@@ -71,8 +70,6 @@ export class Game {
     this.footerAd = new FooterAd();
     this.endGameStatsPanel = new EndGameStatsPanel();
     this.moveSheet = new MoveSheet();
-    this.creditBadge = new CreditBadge();
-
     // Build left panel: commentary above move sheet
     this.leftPanel = document.createElement("div");
     this.leftPanel.className = "left-panel";

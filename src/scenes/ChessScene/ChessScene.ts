@@ -17,6 +17,8 @@ export class ChessScene extends BasicScene {
   private chessGameEngine: ChessGameEngine;
   private raycaster: Raycaster;
   private clickPointer: Vector2;
+  private _isDragging = false;
+  private _mouseDownPos = { x: 0, y: 0 };
 
   constructor(props: BasicSceneProps, useGlassModel = true) {
     super(props);
@@ -40,9 +42,23 @@ export class ChessScene extends BasicScene {
   }
 
   private onMouseDown = (event: MouseEvent): void => {
+    this._isDragging = false;
+    this._mouseDownPos = { x: event.clientX, y: event.clientY };
+
     const { x, y } = this.getCoords(event);
     this.clickPointer.x = x;
     this.clickPointer.y = y;
+
+    if (this.chessGameEngine.isAnySelected()) {
+      // Tap-to-move: piece already selected, try placing on target square
+      this.raycaster.setFromCamera(this.clickPointer, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.children);
+      const groundHit = intersects.find((el) => el.object.userData.ground);
+      const targetField = groundHit?.object?.userData?.droppable ? groundHit.object : null;
+      const actionResult = this.chessGameEngine.deselect(targetField);
+      if (actionResult) this.onActionPerformed(actionResult);
+      return;
+    }
 
     this.selectPiece();
   };
@@ -71,23 +87,24 @@ export class ChessScene extends BasicScene {
   }
 
   private onMouseUp = (): void => {
-    if (!this.chessGameEngine.isAnySelected()) {
-      return;
+    if (!this.chessGameEngine.isAnySelected()) return;
+
+    if (this._isDragging) {
+      // Drag-drop: release piece on target
+      const intersects = this.raycaster.intersectObjects(this.children);
+      const item = intersects.find((el) => el.object.userData.ground);
+      const actionResult = this.chessGameEngine.deselect(item ? item.object : null);
+      if (actionResult) this.onActionPerformed(actionResult);
     }
-    const intersects = this.raycaster.intersectObjects(this.children);
-    const item = intersects.find((el) => el.object.userData.ground);
-
-    const actionResult = this.chessGameEngine.deselect(item ? item.object : null);
-
-    if (!actionResult) {
-      return;
-    }
-
-    this.onActionPerformed(actionResult);
+    // Tap: keep piece selected for next click
   };
 
   private onPointerMove = (event: MouseEvent) => {
-    this.movePiece(event);
+    if (!this.chessGameEngine.isAnySelected()) return;
+    const dx = event.clientX - this._mouseDownPos.x;
+    const dy = event.clientY - this._mouseDownPos.y;
+    if (dx * dx + dy * dy > 25) this._isDragging = true;
+    if (this._isDragging) this.movePiece(event);
   };
 
   private movePiece(event: MouseEvent): void {
