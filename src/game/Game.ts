@@ -263,6 +263,7 @@ export class Game {
     this.gamificationEngine?.reset();
     this.moveSheet.clear();
     this.clearCommentary();
+    this.leftPanel.classList.remove("active");
     this.activeScene = this.createChessScene();
     this.showLandingPage();
   }
@@ -307,6 +308,7 @@ export class Game {
           voiceToggle
         );
         this.moveSheet.show();
+        this.leftPanel.classList.add("active");
         this.moveNumber = 1;
         eventBus.off("game:start", onGameStart);
       };
@@ -331,6 +333,7 @@ export class Game {
         const d = data as { playerColor: string };
         this.playerHeader = new PlayerHeader(d.playerColor, "Minimax AI", "chill", voiceToggle);
         this.moveSheet.show();
+        this.leftPanel.classList.add("active");
         this.moveNumber = 1;
         eventBus.off("game:start", onGameStart);
       };

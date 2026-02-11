@@ -74,6 +74,7 @@ export class ToastSystem {
 
   speak(message: string): void {
     if (!this.voiceEnabled || typeof speechSynthesis === "undefined") return;
+    speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(message);
     utterance.rate = 0.85;
     utterance.pitch = 1.0;

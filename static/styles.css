@@ -869,11 +869,14 @@ body.game-active .landing-page { display: none; }
   left: 20px;
   width: 220px;
   z-index: 100;
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 8px;
   max-height: calc(100vh - 80px);
   pointer-events: none;
+}
+.left-panel.active {
+  display: flex;
 }
 .left-panel > * { pointer-events: auto; }
 

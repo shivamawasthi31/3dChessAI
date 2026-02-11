@@ -25,6 +25,9 @@ module.exports = {
       events: path.resolve(__dirname, "./src/events")
     },
     extensions: [".ts", ".js"],
+    fallback: {
+      events: require.resolve("events/"),
+    },
   },
   module: {
     rules: [
